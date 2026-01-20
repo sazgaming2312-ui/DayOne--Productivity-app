@@ -4,99 +4,80 @@ import { Dashboard } from './components/Dashboard';
 import { TaskList } from './components/TaskList';
 import { TaskModal } from './components/TaskModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
-import { TaskService } from './services/taskService';
-import { Task, TaskFilter } from './types';
-import { Loader2 } from 'lucide-react';
+import { AuthModal } from './components/AuthModal';
+import { ApiService } from './services/apiService';
+import { DayOneAgent } from './services/aiAgent';
+import { Task, TaskFilter, User } from './types';
+import { Loader2, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
-  // Initialize tasks
-  const [tasks, setTasks] = useState<Task[]>(() => TaskService.getTasks());
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [agentAdvice, setAgentAdvice] = useState<string>('');
   
-  // View state persistence
-  const [view, setView] = useState<'dashboard' | 'tasks'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dayone_view');
-      return (saved === 'dashboard' || saved === 'tasks') ? saved : 'dashboard';
-    }
-    return 'dashboard';
-  });
-
+  const [view, setView] = useState<'dashboard' | 'tasks'>('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
-  
-  // Confirmation state
-  const [confirmConfig, setConfirmConfig] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    confirmLabel: string;
-    variant: 'danger' | 'info';
-    onConfirm: () => void;
-  } | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<any>(null);
+  const [filter, setFilter] = useState<TaskFilter>({ status: 'all' });
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
 
-  // Filter state
-  const [filter, setFilter] = useState<TaskFilter>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('dayone_filter');
-        return saved ? JSON.parse(saved) : { status: 'all' };
-      } catch {
-        return { status: 'all' };
-      }
-    }
-    return { status: 'all' };
-  });
-  
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('darkMode') === 'true' ||
-        (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-    return false;
-  });
-
+  // Handle Dark Mode DOM manipulation
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('darkMode', 'true');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('darkMode', 'false');
     }
+    localStorage.setItem('darkMode', darkMode.toString());
   }, [darkMode]);
 
   useEffect(() => {
-    localStorage.setItem('dayone_view', view);
-  }, [view]);
+    checkAuth();
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem('dayone_filter', JSON.stringify(filter));
-  }, [filter]);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
-  const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  const loadTasks = () => {
-    setTasks(TaskService.getTasks());
+  const checkAuth = async () => {
+    const currentUser = await ApiService.getCurrentUser();
+    setUser(currentUser);
+    setLoading(false);
   };
 
-  const handleCreateTask = (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    TaskService.createTask(task);
-    loadTasks();
-    setIsModalOpen(false);
+  const loadData = async () => {
+    try {
+      const data = await ApiService.getTasks();
+      setTasks(data);
+      // Backend AI Agent Strategic Planning
+      const advice = await DayOneAgent.getStrategicAdvice(data);
+      setAgentAdvice(advice);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleViewTasks = (newFilter?: TaskFilter) => {
+    if (newFilter) {
+      setFilter(prev => ({ ...prev, ...newFilter }));
+    }
+    setView('tasks');
   };
 
   const handleUpdateTask = (task: Task) => {
-    // If it's an existing task being updated, we confirm
     setConfirmConfig({
       isOpen: true,
       title: 'Confirm Changes',
-      message: 'Are you sure you want to save these changes to the task?',
-      confirmLabel: 'Save Changes',
+      message: 'Save updates to backend?',
+      confirmLabel: 'Sync Now',
       variant: 'info',
-      onConfirm: () => {
-        TaskService.updateTask(task);
-        loadTasks();
+      onConfirm: async () => {
+        await ApiService.saveTask(task);
+        await loadData();
         setIsModalOpen(false);
         setEditingTask(undefined);
         setConfirmConfig(null);
@@ -108,77 +89,57 @@ const App: React.FC = () => {
     setConfirmConfig({
       isOpen: true,
       title: 'Delete Task',
-      message: 'Are you sure you want to delete this task? This action cannot be undone.',
+      message: 'This will permanently remove the task from our servers.',
       confirmLabel: 'Delete',
       variant: 'danger',
-      onConfirm: () => {
-        // Optimistic update
-        setTasks(prev => prev.filter(t => t.id !== id));
-        // Persist
-        TaskService.deleteTask(id);
+      onConfirm: async () => {
+        await ApiService.deleteTask(id);
+        await loadData();
         setConfirmConfig(null);
       }
     });
   };
 
-  const handleEditClick = (task: Task) => {
-    setEditingTask(task);
-    setIsModalOpen(true);
-  };
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-500">
+      <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+    </div>
+  );
 
-  const handleToggleComplete = (task: Task) => {
-    const updated = { ...task, isCompleted: !task.isCompleted };
-    TaskService.updateTask(updated);
-    loadTasks();
-  };
-
-  const handleOpenCreateModal = () => {
-    setEditingTask(undefined);
-    setIsModalOpen(true);
-  };
-
-  const handleViewTasks = (filterOverride?: TaskFilter) => {
-    if (filterOverride) {
-      setFilter(filterOverride);
-    } else {
-      setFilter({ status: 'all' });
-    }
-    setView('tasks');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Loading DayOne...</p>
-        </div>
-      </div>
-    );
-  }
+  if (!user) return <AuthModal onLogin={setUser} />;
 
   return (
     <Layout
       currentView={view}
       onNavigate={setView}
-      onAddClick={handleOpenCreateModal}
+      onAddClick={() => { setEditingTask(undefined); setIsModalOpen(true); }}
       isDarkMode={darkMode}
-      onToggleDarkMode={toggleDarkMode}
+      onToggleDarkMode={() => setDarkMode(!darkMode)}
+      user={user}
     >
+      {/* AI Agent Advice Banner */}
+      {view === 'dashboard' && agentAdvice && (
+        <div className="mb-6 bg-indigo-600/10 dark:bg-indigo-400/10 border border-indigo-200 dark:border-indigo-800 p-4 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="p-2 bg-indigo-600 rounded-lg text-white">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">DayOne Agent Advice</p>
+            <p className="text-gray-800 dark:text-gray-200 text-sm font-medium">{agentAdvice}</p>
+          </div>
+        </div>
+      )}
+
       {view === 'dashboard' ? (
-        <Dashboard 
-          tasks={tasks} 
-          onViewTasks={handleViewTasks} 
-          isDarkMode={darkMode}
-        />
+        <Dashboard tasks={tasks} onViewTasks={handleViewTasks} isDarkMode={darkMode} />
       ) : (
         <TaskList
           tasks={tasks}
           filter={filter}
           onFilterChange={setFilter}
-          onEdit={handleEditClick}
+          onEdit={(t) => { setEditingTask(t); setIsModalOpen(true); }}
           onDelete={handleDeleteTask}
-          onToggleComplete={handleToggleComplete}
+          onToggleComplete={async (t) => { await ApiService.saveTask({...t, isCompleted: !t.isCompleted}); loadData(); }}
           onUpdateTask={handleUpdateTask}
         />
       )}
@@ -187,21 +148,13 @@ const App: React.FC = () => {
         <TaskModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+          onSubmit={async (t) => { await ApiService.saveTask(t); loadData(); setIsModalOpen(false); }}
           initialData={editingTask}
         />
       )}
 
       {confirmConfig && (
-        <ConfirmationModal
-          isOpen={confirmConfig.isOpen}
-          title={confirmConfig.title}
-          message={confirmConfig.message}
-          confirmLabel={confirmConfig.confirmLabel}
-          variant={confirmConfig.variant}
-          onConfirm={confirmConfig.onConfirm}
-          onCancel={() => setConfirmConfig(null)}
-        />
+        <ConfirmationModal {...confirmConfig} onCancel={() => setConfirmConfig(null)} />
       )}
     </Layout>
   );

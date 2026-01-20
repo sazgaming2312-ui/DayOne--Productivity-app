@@ -1,99 +1,20 @@
-🚀 DayOne – Productivity App
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-DayOne is a modern, local-first productivity dashboard built to help you plan, prioritize, and execute tasks effectively — without accounts, ads, or cloud lock-in.
+# Run and deploy your AI Studio app
 
-It focuses on clarity, speed, and thoughtful UX rather than feature bloat.
+This contains everything you need to run your app locally.
 
-⸻
+View your app in AI Studio: https://ai.studio/apps/drive/1JZJMzUqrMnuhfQk-U39IugwDD9F5R6N9
 
-✨ Features
+## Run Locally
 
-📝 Task Management
-	•	Create, edit, and delete tasks
-	•	Mark tasks as completed / incomplete
-	•	Task priorities (Medium, High, Urgent)
-	•	Task categories (Work, Personal, Learning)
-
-📊 Dashboard
-	•	Visual overview of task priorities
-	•	Tasks grouped by category
-	•	Quick insights to help you focus on what matters most
-
-🔍 Filtering & Views
-	•	Switch between Dashboard and Task List
-	•	Filter tasks by status
-	•	View state persists across refreshes
-
-🌙 Dark Mode
-	•	Light / dark mode toggle
-	•	Respects system preference on first load
-	•	Preference saved automatically
-
-💾 Local-First Storage
-	•	All data stored in localStorage
-	•	No backend, no accounts, no tracking
-	•	Your data stays on your device
-
-🧠 UX Polish
-	•	Confirmation modals for destructive actions
-	•	Optimistic UI updates for smooth interactions
-	•	Clean, responsive layout
-
-⸻
-
-🛠 Tech Stack
-	•	React (Vite)
-	•	TypeScript
-	•	Tailwind CSS
-	•	Recharts (for dashboard visualizations)
-	•	Lucide Icons
-	•	Vercel (deployment)
-
-⸻
-
-📦 Project Structure
-
-src/
-├── components/        # UI components
-├── services/          # Task persistence & business logic
-├── types.ts           # Shared TypeScript types
-├── App.tsx            # App orchestration
-├── index.tsx          # React entry point
-└── index.html         # HTML entry
+**Prerequisites:**  Node.js
 
 
-⸻
-
-▶️ Running Locally
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-App will be available to run locally
-
-⸻
-
-🎯 Project Goals
-	•	Build a clean, usable productivity tool
-	•	Practice scalable React + TypeScript architecture
-	•	Focus on UX and state management
-	•	Ship a real, deployable product
-
-⸻
-
-🔮 Planned Improvements
-	•	Due dates & overdue highlighting
-	•	Task search
-	•	Priority indicators in task list
-	•	Productivity stats & streaks
-	•	Export / import tasks (JSON)
-
-⸻
-
-🧑‍💻 Authors:
-• Syed Aman Zabi 
-• Talha Riyan Pasha
-• Yuvraj Mohana
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

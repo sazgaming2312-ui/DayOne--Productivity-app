@@ -22,16 +22,24 @@ export interface Subtask {
 
 export interface Task {
   id: string;
+  userId: string;
   title: string;
   description: string;
-  startDate: string; // ISO Date string YYYY-MM-DD
-  endDate: string;   // ISO Date string YYYY-MM-DD
+  startDate: string;
+  endDate: string;
   priority: Priority;
   category: Category;
   isCompleted: boolean;
   subtasks: Subtask[];
   createdAt: number;
   updatedAt: number;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
 }
 
 export interface TaskFilter {

@@ -1,3 +1,4 @@
+
 import { Task, Priority, Category } from '../types';
 
 const STORAGE_KEY = 'dayone_tasks_v1';
@@ -6,6 +7,8 @@ const STORAGE_KEY = 'dayone_tasks_v1';
 const seedTasks: Task[] = [
   {
     id: '1',
+    // FIX: Added missing userId property to satisfy Task interface
+    userId: 'user_123',
     title: 'Design System Architecture',
     description: 'Create the initial UML diagrams for the Java backend service.',
     startDate: new Date().toISOString().split('T')[0],
@@ -22,6 +25,8 @@ const seedTasks: Task[] = [
   },
   {
     id: '2',
+    // FIX: Added missing userId property to satisfy Task interface
+    userId: 'user_123',
     title: 'Weekly Grocery Run',
     description: 'Buy vegetables, fruits, and chicken for the week.',
     startDate: new Date().toISOString().split('T')[0],
@@ -35,6 +40,8 @@ const seedTasks: Task[] = [
   },
   {
     id: '3',
+    // FIX: Added missing userId property to satisfy Task interface
+    userId: 'user_123',
     title: 'Learn Gemini API',
     description: 'Study the documentation for the new Gemini 2.5 Flash model.',
     startDate: new Date(Date.now() - 86400000).toISOString().split('T')[0],
